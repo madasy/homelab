@@ -1,21 +1,4 @@
-Nice moment to do that. A homelab that isn’t version-controlled is like a spaceship without a flight recorder. The YAML remembers what your future self will forget.
 
-Goal: push your **infrastructure config** to Git without leaking secrets or runtime junk.
-
-We’ll keep:
-
-* `compose.yaml`
-* Homepage config
-* possibly Technitium config templates
-
-We’ll exclude:
-
-* container databases
-* Let's Encrypt certificates
-* runtime volumes
-* logs
-
-Your current structure roughly looks like:
 
 ```
 /opt/homelab

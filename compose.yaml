@@ -1,0 +1,125 @@
+services:
+
+  npm-db:
+    image: jc21/mariadb-aria:latest
+    container_name: npm-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${NPM_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: npm
+      MYSQL_USER: npm
+      MYSQL_PASSWORD: ${NPM_DB_PASSWORD}
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - ./data/npm-db:/var/lib/mysql
+    networks:
+      - backend
+
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
+    depends_on:
+      - npm-db
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    environment:
+      DB_MYSQL_HOST: npm-db
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: npm
+      DB_MYSQL_PASSWORD: ${NPM_DB_PASSWORD}
+      DB_MYSQL_NAME: npm
+    volumes:
+      - ./data/npm-data:/data
+      - ./data/npm-letsencrypt:/etc/letsencrypt
+    networks:
+      - proxy
+      - backend
+
+  technitium:
+    image: technitium/dns-server:latest
+    container_name: technitium
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      DNS_SERVER_DOMAIN: dns.madassery.me
+    volumes:
+      - ./data/technitium:/etc/dns
+    networks:
+      lan_macvlan:
+        ipv4_address: 192.168.1.2
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/portainer:/data
+    networks:
+      - proxy
+      - backend
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - ./data/kuma:/app/data
+    networks:
+      - proxy
+      - backend
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      PUID: 1000
+      PGID: 1000
+      HOMEPAGE_ALLOWED_HOSTS: dash.madassery.me
+    volumes:
+      - ./config/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+      - backend
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    command: --cleanup --interval 21600
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - backend
+
+  samba-scan:
+    image: dperson/samba:latest
+    container_name: samba-scan
+    restart: unless-stopped
+    ports:
+      - "445:445"
+    volumes:
+      - ./data/scan-inbox:/mount
+    command: >
+      -u "scanner;ChangeThisScannerPassword"
+      -s "scan;/mount;yes;no;no;scanner"
+      -p
+    networks:
+      - backend
+
+networks:
+
+  proxy:
+    external: true
+
+  backend:
+    external: true
+
+  lan_macvlan:
+    external: true

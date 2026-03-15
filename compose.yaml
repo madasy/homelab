@@ -73,21 +73,6 @@ services:
       - proxy
       - backend
 
-  homepage:
-    image: ghcr.io/gethomepage/homepage:latest
-    container_name: homepage
-    restart: unless-stopped
-    environment:
-      PUID: 1000
-      PGID: 1000
-      HOMEPAGE_ALLOWED_HOSTS: dash.madassery.me
-    volumes:
-      - ./config/homepage:/app/config
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - proxy
-      - backend
-
   watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
